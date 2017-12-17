@@ -18,10 +18,16 @@ function document(ts) {
   while ((tok = peek(toks))) {
     debug && console.log(`n.Document/peek: ${JSON.stringify(tok)}`);
     switch (tok.type) {
-      case t.BEGIN:
+      case t.BEGIN_ITEMIZE:
         debug && console.log('Calling env from document.');
         toks.pop();
-        children.push(env(toks));
+        children.push(list(n.Itemize, toks));
+        console.log(children);
+        break;
+      case t.BEGIN_ENUMERATE:
+        debug && console.log('Calling env from document.');
+        toks.pop();
+        children.push(list(n.Enumerate, toks));
         console.log(children);
         break;
       case t.TITLE:
@@ -205,8 +211,10 @@ function paragraph(toks) {
     tok.type !== t.SECTION &&
     tok.type !== t.SUBSECTION &&
     tok.type !== t.ITEM &&
-    tok.type !== t.END
+    tok.type !== t.END_ITEMIZE &&
+    tok.type !== t.END_ENUMERATE
   ) {
+    debug && console.log(tok.type, t.END_ITEMIZE, tok.type !== t.END_ITEMIZE);
     debug && console.log(`n.Paragraph/peek: ${JSON.stringify(tok)}`);
     switch (tok.type) {
       case t.LETTER:
@@ -215,6 +223,18 @@ function paragraph(toks) {
       case t.ESCAPED:
         debug && console.log('Calling text from paragraph.');
         children.push(text(toks));
+        break;
+      case t.BEGIN_ITEMIZE:
+        debug && console.log('Calling list (itemize) from document.');
+        toks.pop();
+        children.push(list(n.Itemize, toks));
+        console.log(children);
+        break;
+      case t.BEGIN_ENUMERATE:
+        debug && console.log('Calling list (enumerate) from document.');
+        toks.pop();
+        children.push(list(n.Enumerate, toks));
+        console.log(children);
         break;
       case t.CWORD:
         debug && console.log('Calling command from paragraph.');
@@ -239,7 +259,8 @@ function paragraph(toks) {
       tok.type === t.SECTION ||
       tok.type === t.SUBSECTION ||
       tok.type === t.ITEM ||
-      tok.type === t.END,
+      tok.type === t.END_ITEMIZE ||
+      tok.type === t.END_ENUMERATE,
     `n.Paragraph must end with a PAR, ITEM, END, SECTION, or SUBSECTION token, or with the end of the token stream. Encountered ${JSON.stringify(
       tok
     )}.`
@@ -323,67 +344,46 @@ function env(toks) {
   return e[envName](toks);
 }
 
-let e = {
-  itemize: toks => {
-    let tok;
+function list(env, toks) {
+  let tok;
 
-    console.assert(
-      toks.length > 0,
-      'End of token stream encountered while parsing list environment.'
-    );
+  console.assert(
+    toks.length > 0,
+    'End of token stream encountered while parsing list environment.'
+  );
 
-    // tok = toks.peek();
-    // console.assert(
-    //   tok.type === t.ITEM,
-    //   `List environment must begin with an \\item. Encountered ${JSON.stringify(
-    //     tok
-    //   )}`
-    // );
-
-    let children = [];
-    while ((tok = peek(toks)) && tok.type !== t.END) {
-      console.log(`e.itemize/peek: ${JSON.stringify(tok)}`);
-      switch (tok.type) {
-        case t.ITEM:
-          toks.pop();
-          console.log(`Calling item from e.itemize.`);
-          children.push(item(toks));
-          break;
-        default:
-          throw new Error(
-            `Expected \\item or \\end{itemize} in the top level of an itemize environment.
-          Encountered the token ${JSON.stringify(tok)}.`
-          );
-      }
-    }
-    tok = toks.pop();
-    console.assert(tok, 'Token stream ended before itemize environment did.');
-    console.assert(
-      tok.type === t.END,
-      `Expected END token to terminate itemize environment. Encountered ${JSON.stringify(
-        tok
-      )}`
-    );
-    console.assert(
-      toks.pop().type === t.LBRACE,
-      'Expected LBRACE token following \\end command.'
-    );
-    let envName = word(toks);
-    console.assert(
-      envName === 'itemize',
-      `Encountered \\end{${envName}}, expected \\end{itemize}.`
-    );
-    console.assert(
-      toks.pop().type === t.RBRACE,
-      'Expected LBRACE token following \\end{itemize.'
-    );
-    return { type: n.Itemize, children };
-  }
-};
-
-function item(toks) {
+  let closer = t['END' + '_' + env.toUpperCase()];
+  console.log(`Closer: ${closer}`);
   let children = [];
-  while ((tok = peek(toks)) && tok.type !== t.ITEM && tok.type !== t.END) {
+  while ((tok = peek(toks)) && tok.type !== closer) {
+    console.log(`e.${env}/peek: ${JSON.stringify(tok)}`);
+    switch (tok.type) {
+      case t.ITEM:
+        toks.pop();
+        console.log(`Calling item from e.itemize.`);
+        children.push(item(closer, toks));
+        break;
+      default:
+        throw new Error(
+          `Expected \\item or \\end{itemize} in the top level of an itemize environment.
+          Encountered the token ${JSON.stringify(tok)}.`
+        );
+    }
+  }
+  tok = toks.pop();
+  console.assert(tok, 'Token stream ended before itemize environment did.');
+  console.assert(
+    tok.type === closer,
+    `Expected ${closer} token to terminate ${env} environment. Encountered ${JSON.stringify(
+      tok
+    )}`
+  );
+  return { type: n[env], children };
+}
+
+function item(closer, toks) {
+  let children = [];
+  while ((tok = peek(toks)) && tok.type !== t.ITEM && tok.type !== closer) {
     debug && console.log(`n.item/peek: ${JSON.stringify(tok)}`);
     switch (tok.type) {
       case t.BEGIN:
@@ -391,7 +391,7 @@ function item(toks) {
         break;
       case t.ITEM:
         break;
-      case t.END:
+      case closer:
         break;
       case t.LETTER:
       case t.OTHER:

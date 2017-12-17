@@ -16,9 +16,10 @@ let tags = {
   Author: 'span',
   Section: 'div',
   Subsection: 'div',
-  Paragraph: 'p',
+  Paragraph: 'div',
   BracedGroup: 'span',
   Itemize: 'ul',
+  Enumerate: 'ol',
   Item: 'li'
 };
 

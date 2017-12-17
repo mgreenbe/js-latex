@@ -9,5 +9,6 @@ module.exports = {
   Paragraph: 'Paragraph',
   BracedGroup: 'BracedGroup',
   Itemize: 'Itemize',
+  Enumerate: 'Enumerate',
   Item: 'Item'
 };

@@ -24,9 +24,13 @@ let lex = str => {
       // display math
       ts.push({ type: t.DMATH });
       debug && console.log(`Matched DMATH.`);
-    } else if ((match = /^\\(begin|end)\{([A-Za-z]+)}\s*/.exec(s))) {
+    } else if ((match = /^\\begin\{([A-Za-z]+)\}\s*/.exec(s))) {
       // control word; throw out subsequent whitespace
-      ts.push({ type: `${match[1].toUpperCase()}_${match[2].toUpperCase()}` });
+      ts.push({ type: `BEGIN_${match[1].toUpperCase()}` });
+      debug && console.log(`Matched command: ${match[1].toUpperCase()}.`);
+    } else if ((match = /^\\end\{([A-Za-z]+)\}/.exec(s))) {
+      // control word; throw out subsequent whitespace
+      ts.push({ type: `END_${match[1].toUpperCase()}` });
       debug && console.log(`Matched command: ${match[1].toUpperCase()}.`);
     } else if (
       (match = /^\\(subsection|section|title|author|begin|end|item)\s*/.exec(s))
