@@ -4,6 +4,7 @@ module.exports = {
   CWORD: 'CWORD',
   LETTER: 'LETTER',
   OTHER: 'OTHER',
+  NONLETTER: 'NONLETTER',
   CSYMBOL: 'CSYMBOL',
   LBRACE: 'LBRACE',
   RBRACE: 'RBRACE',

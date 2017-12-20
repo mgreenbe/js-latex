@@ -11,3 +11,16 @@
 | Text        | -                                                          | LETTER, OTHER, ESCAPED                 | EOF, SECTION, SUBSECTION, PAR, ITEM, END\_\*, RBRACE |
 
 Environments: Itemize, Enumerate, Theorem, Center, Displaymath, Equation, Equation*, Align, Align*, Multline, Multline\*
+
+# Lexer
+
+```
+rules: [Rule]
+```
+
+```
+interface Rule {
+    regex: RegEx,
+    makeToken: (match) => protoToken | null,
+}
+```
